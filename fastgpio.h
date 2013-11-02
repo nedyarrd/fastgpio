@@ -34,10 +34,7 @@ int gpio_write_num_set;
 
 static dev_t Major_read;/* Major number assigned to our device driver */
 static struct cdev c_dev;
-static int Major_write;/* Major number assigned to our device driver */
 static int Device_Open = 0;
-//static char msg[BUF_LEN];/* The msg the device will give when asked */
-//static char *msg_Ptr;
 
 static struct file_operations fops_read = {
 .read = gpr_device_read,
