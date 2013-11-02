@@ -2,6 +2,7 @@
 #include <linux/module.h>
 #include <linux/fs.h>
 #include <asm/uaccess.h>
+#include "fastgpio_ioctl.h"
 
 #ifndef FASTGPIO_H
 #define FASTGPIO_H
@@ -16,7 +17,6 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 #define SUCCESS 0
 #define DEVICE_NAME_READ	"gpioread"/* Dev name as it appears in /proc/devices   */
 #define DEVICE_NAME_WRITE	"gpiowrite"/* Dev name as it appears in /proc/devices   */
-#define MAX_GPIO 128
 #define BUF_LEN		MAX_GPIO /* Max length of the message from the device */
 #define BUF_LEN_SET	MAX_GPIO*4 // I assume that gpio number is 3 digits + space or colon or something
 

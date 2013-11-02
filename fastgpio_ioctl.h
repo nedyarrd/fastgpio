@@ -1,4 +1,4 @@
-#include "fastgpio.h"
+#define MAX_GPIO 128
 typedef struct
 	{
 	int number;

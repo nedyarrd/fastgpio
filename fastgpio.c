@@ -11,7 +11,6 @@
 #include <linux/gpio.h>
 #include <asm/uaccess.h>/* for put_user */
 #include "fastgpio.h"
-#include "fastgpio_ioctl.h"
 
 MODULE_LICENSE("GPL");
 
@@ -131,7 +130,7 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 			gpio_read_num_set = tmp.number;
 			for (i=0;i < tmp.number; i++)
 				gpio_read_ports[i] = tmp.pins[i];
-			printk(KERN_DEBUG "fastgpio: setting %d pins to read",tmp.number);
+			printk(KERN_DEBUG "fastgpio: setting %d pins to write",tmp.number);
 			return 0;
 			break;
 		}
