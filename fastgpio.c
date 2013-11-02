@@ -14,8 +14,6 @@
 
 MODULE_LICENSE("GPL");
 
-//static int counter;
-
 
 int init_module(void)
 {
@@ -52,9 +50,7 @@ void cleanup_module(void)
   device_destroy(cl, Major_read);
   class_destroy(cl);
   unregister_chrdev_region(Major_read, 1);
-//
-//    class_destroy(cl);
-//    unregister_chrdev(Major_read, DEVICE_NAME_READ);
+
 
 }
 
@@ -84,8 +80,8 @@ static ssize_t gpr_device_read(struct file *filp,	/* see include/linux/fs.h   */
     int i;
     if ((int)offset > gpio_read_num_set)
 	return 0;
-//    for (i = (int)offset; i <= gpio_read_num_set - (int)offset; i++)
-//	gpio_read[i] = gpio_can_sleep_table[i] ? gpio_get_value(gpio_read_ports[i]) : gpio_get_value_cansleep(gpio_read_ports[i]); ;
+    for (i = (int)offset; i <= gpio_read_num_set - (int)offset; i++)
+	gpio_read[i] = gpio_can_sleep_table[i] ? gpio_get_value(gpio_read_ports[i]) : gpio_get_value_cansleep(gpio_read_ports[i]); ;
     if (!copy_to_user(buffer,&gpio_read+(int)offset,gpio_read_num_set-(int)offset)) return gpio_read_num_set - (int)offset;
     return 0;
 }
