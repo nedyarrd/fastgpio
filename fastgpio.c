@@ -85,11 +85,11 @@ static ssize_t gpr_device_read(struct file *filp,	/* see include/linux/fs.h   */
 	{
 	printk(KERN_DEBUG "fastgpio: no gpios to read are set use ioctl to set desired gpios");
 	}
-    if ((int)offset > gpio_read_num_set)
+    if (off > gpio_read_num_set)
 	return 0;
 	
-	printk(KERN_DEBUG "offset: %ld gpio_num: %d", (long)*offset,gpio_read_num_set);
-//    for (i = (long)*offset; i <= gpio_read_num_set - (int)offset; i++)
+	printk(KERN_DEBUG "fastgpio: offset: %ld gpio_num: %d", off,gpio_read_num_set);
+//    for (i = off; i <= gpio_read_num_set - off; i++)
 //	gpio_read[i] = gpio_can_sleep_table[i] ? gpio_get_value(gpio_read_ports[i]) : gpio_get_value_cansleep(gpio_read_ports[i]); ;
 //    if (!copy_to_user(buffer,&gpio_read+(long)*offset,gpio_read_num_set-(long)*offset)) return gpio_read_num_set - (long)*offset;
     return 0;
@@ -106,11 +106,34 @@ static ssize_t gpr_device_write(struct file *filp, const char *buff, size_t len,
 
 static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	{
+	gpio_ioctl tmp;
+	int i;
 	switch (cmd)
 		{
 		case FASTGPIO_SET_PINS:
+			if (copy_from_user(&tmp, (gpio_ioctl *)arg,sizeof(gpio_ioctl)))
+				return -EACCES;
+			printk(KERN_DEBUG "fastgpio: checking that pins are usable");
+			// check if the pins are present and useble on board etc...
+
+			gpio_write_num_set = tmp.number;
+			for (i=0;i < tmp.number; i++)
+				gpio_write_ports[i] = tmp.pins[i];
+			printk(KERN_DEBUG "fastgpio: setting %d pins to read",tmp.number);
+			return 0;
 			break;
 		case FASTGPIO_READ_PINS:
+			if (copy_from_user(&tmp, (gpio_ioctl *)arg,sizeof(gpio_ioctl)))
+				return -EACCES;
+			printk(KERN_DEBUG "fastgpio: checking that pins are usable");
+			// check if the pins are present and useble on board etc...
+
+			gpio_read_num_set = tmp.number;
+			for (i=0;i < tmp.number; i++)
+				gpio_read_ports[i] = tmp.pins[i];
+			printk(KERN_DEBUG "fastgpio: setting %d pins to read",tmp.number);
+			return 0;
 			break;
 		}
+	return 0;
 	}

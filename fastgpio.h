@@ -41,8 +41,8 @@ static struct file_operations fops_read = {
 .read = gpr_device_read,
 .write = gpr_device_write,
 .open = gpr_device_open,
-.release = gpr_device_release
-.ioctl = gpr_device_ioctl
+.release = gpr_device_release,
+.unlocked_ioctl = gpr_device_ioctl
 };
 
 #endif
