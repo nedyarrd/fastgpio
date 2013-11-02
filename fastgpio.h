@@ -11,6 +11,7 @@ static int gpr_device_open(struct inode *, struct file *);
 static int gpr_device_release(struct inode *, struct file *);
 static ssize_t gpr_device_read(struct file *, char *, size_t, loff_t *);
 static ssize_t gpr_device_write(struct file *, const char *, size_t, loff_t *);
+static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
 
 #define SUCCESS 0
 #define DEVICE_NAME_READ	"gpioread"/* Dev name as it appears in /proc/devices   */
@@ -41,6 +42,7 @@ static struct file_operations fops_read = {
 .write = gpr_device_write,
 .open = gpr_device_open,
 .release = gpr_device_release
+.ioctl = gpr_device_ioctl
 };
 
 #endif

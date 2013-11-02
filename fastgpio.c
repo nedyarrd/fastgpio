@@ -11,6 +11,7 @@
 #include <linux/gpio.h>
 #include <asm/uaccess.h>/* for put_user */
 #include "fastgpio.h"
+#include "fastgpio_ioctl.h"
 
 MODULE_LICENSE("GPL");
 
@@ -77,7 +78,9 @@ static ssize_t gpr_device_read(struct file *filp,	/* see include/linux/fs.h   */
 	       size_t length,	/* length of the buffer     */
 	       loff_t * offset)
 {
-    int i;
+//    int i;
+	long off;
+	off = (long)*offset;
     if (!gpio_read_num_set)
 	{
 	printk(KERN_DEBUG "fastgpio: no gpios to read are set use ioctl to set desired gpios");
@@ -85,10 +88,10 @@ static ssize_t gpr_device_read(struct file *filp,	/* see include/linux/fs.h   */
     if ((int)offset > gpio_read_num_set)
 	return 0;
 	
-	printk(KERN_DEBUG "offset: %d gpio_num: %d", offset,gpio_read_num_set);
-//    for (i = (int)offset; i <= gpio_read_num_set - (int)offset; i++)
+	printk(KERN_DEBUG "offset: %ld gpio_num: %d", (long)*offset,gpio_read_num_set);
+//    for (i = (long)*offset; i <= gpio_read_num_set - (int)offset; i++)
 //	gpio_read[i] = gpio_can_sleep_table[i] ? gpio_get_value(gpio_read_ports[i]) : gpio_get_value_cansleep(gpio_read_ports[i]); ;
-//    if (!copy_to_user(buffer,&gpio_read+(int)offset,gpio_read_num_set-(int)offset)) return gpio_read_num_set - (int)offset;
+//    if (!copy_to_user(buffer,&gpio_read+(long)*offset,gpio_read_num_set-(long)*offset)) return gpio_read_num_set - (long)*offset;
     return 0;
 }
 
@@ -101,3 +104,13 @@ static ssize_t gpr_device_write(struct file *filp, const char *buff, size_t len,
 }
 
 
+static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+	{
+	switch (cmd)
+		{
+		case FASTGPIO_SET_PINS:
+			break;
+		case FASTGPIO_READ_PINS:
+			break;
+		}
+	}
