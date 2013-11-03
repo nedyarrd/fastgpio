@@ -77,7 +77,7 @@ static ssize_t gpr_device_read(struct file *filp,	/* see include/linux/fs.h   */
 	       size_t length,	/* length of the buffer     */
 	       loff_t * offset)
 {
-//    int i;
+    int i,j,k;
 	long off;
 	off = (long)*offset;
     if (!gpio_read_num_set)
@@ -88,10 +88,16 @@ static ssize_t gpr_device_read(struct file *filp,	/* see include/linux/fs.h   */
 	return 0;
 	
 	printk(KERN_DEBUG "fastgpio: offset: %ld gpio_num: %d", off,gpio_read_num_set);
+   if ((off+length) > (gpio_read_num_set)) j = gpio_read_num_set; else j = off+length;
 //    for (i = off; i <= gpio_read_num_set - off; i++)
-//	gpio_read[i] = gpio_can_sleep_table[i] ? gpio_get_value(gpio_read_ports[i]) : gpio_get_value_cansleep(gpio_read_ports[i]); ;
-//    if (!copy_to_user(buffer,&gpio_read+(long)*offset,gpio_read_num_set-(long)*offset)) return gpio_read_num_set - (long)*offset;
-    return 0;
+	k = 0;
+	for (i = off; i < j; i++)
+		{
+		gpio_read[i] = gpio_can_sleep_table[i] ? gpio_get_value(gpio_read_ports[i]) : gpio_get_value_cansleep(gpio_read_ports[i]); ;
+		k++;
+		}
+    if (!copy_to_user(buffer,&gpio_read+(long)*offset,gpio_read_num_set-(long)*offset)) return gpio_read_num_set - (long)*offset;
+	return k;
 }
 
 static ssize_t gpr_device_write(struct file *filp, const char *buff, size_t len, loff_t * offset)
@@ -117,7 +123,10 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 
 			gpio_write_num_set = tmp.number;
 			for (i=0;i < tmp.number; i++)
+				{
 				gpio_write_ports[i] = tmp.pins[i];
+				printk(KERN_DEBUG "fastgpio: write %d", tmp.pins[i]);
+				}
 			printk(KERN_DEBUG "fastgpio: setting %d pins to read",tmp.number);
 			return 0;
 			break;
@@ -129,7 +138,10 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 
 			gpio_read_num_set = tmp.number;
 			for (i=0;i < tmp.number; i++)
+				{
 				gpio_read_ports[i] = tmp.pins[i];
+				printk(KERN_DEBUG "fastgpio: read %d", tmp.pins[i]);
+				}
 			printk(KERN_DEBUG "fastgpio: setting %d pins to write",tmp.number);
 			return 0;
 			break;

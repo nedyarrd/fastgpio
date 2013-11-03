@@ -14,6 +14,9 @@ int main(void)
 	gpio_ioctl gpio_sw;
 	gpio_sw.number = 3;
 	memset(&gpio_sw.pins,MAX_GPIO,sizeof(gpio_sw.pins));
+	gpio_sw.pins[0] = 4;
+	gpio_sw.pins[1] = 3;
+	gpio_sw.pins[2] = 5;
 	fd = open(file_name, O_RDWR);
 	if (fd == -1)
 		{
