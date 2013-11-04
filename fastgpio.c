@@ -1,8 +1,3 @@
-/*
- *  chardev.c: Creates a read-only char device that says how many times
- *  you've read from the dev file
- */
-
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/device.h>
@@ -83,13 +78,13 @@ static ssize_t gpr_device_read(struct file *filp,	/* see include/linux/fs.h   */
     if (!gpio_read_num_set)
 	{
 	printk(KERN_DEBUG "fastgpio: no gpios to read are set use ioctl to set desired gpios");
+	return 0;
 	}
     if (off > gpio_read_num_set)
 	return 0;
 	
 	printk(KERN_DEBUG "fastgpio: offset: %ld gpio_num: %d", off,gpio_read_num_set);
    if ((off+length) > (gpio_read_num_set)) j = gpio_read_num_set; else j = off+length;
-//    for (i = off; i <= gpio_read_num_set - off; i++)
 	k = 0;
 	for (i = off; i < j; i++)
 		{
