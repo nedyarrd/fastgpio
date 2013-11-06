@@ -12,8 +12,10 @@
 int main(void)
 	{
 	char *file_name = "/dev/fastgpio";
-	char *tmp[10];
+	char tmp[10];
 	int fd,i;
+	for (i=0;i<10;i++)
+		tmp[i] = 0;
 	gpio_ioctl gpio_sw;
 	gpio_sw.number = MAX_NUM;
 	memset(&gpio_sw.pins,MAX_GPIO,sizeof(gpio_sw.pins));
@@ -40,16 +42,17 @@ int main(void)
 		}
 	printf("dev/fastgpio ioctl READ_PINS\n");
 	printf("testing file reading:\n");
-	i = read(fd,&tmp,MAX_NUM-1);
+	i = read(fd,tmp,MAX_NUM-1);
 	    printf("read only %d of set pins  - readen %d\n",MAX_NUM+10,i);
-	i = read(fd,&tmp,MAX_NUM+10);
+	i = read(fd,tmp,MAX_NUM+10);
 	    printf("read only %d of set pins  - readen %d\n",MAX_NUM+10,i);
 	for (i=0;i < MAX_NUM; i++)
-		if (tmp[i] > 0) printf("1 "); else printf("0 ");
+		if (tmp[i] == 1) printf("1 "); else printf("0 ");
 	printf("\n");
-	for (i=0;i < MAX_NUM; i++)
-		printf("%c ",tmp[i]+'0');
-	printf("\n");
-	
+	tmp[0] = 0;
+	tmp[1] = 1;
+	tmp[2] = 0;
+	i = write(fd,tmp,3);
+	printf("writen %d bytes to device\n",i);
 	return 0;
 	}

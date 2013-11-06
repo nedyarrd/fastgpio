@@ -1,3 +1,4 @@
+#include <linux/string.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/device.h>
@@ -36,6 +37,7 @@ int init_module(void)
 	    unregister_chrdev_region(Major_read, 1);
 	    return -1;
 	  }
+	memset(&gpio_can_sleep_table,0,MAX_GPIO);
     return 0;
 }
 
@@ -83,8 +85,8 @@ static ssize_t gpr_device_read(struct file *filp,	/* see include/linux/fs.h   */
    if (length > gpio_read_num_set) j = gpio_read_num_set; else j = length;
 	for (i = 0; i < j; i++)
 		{
-		gpio_read[i] = gpio_can_sleep_table[i] ? gpio_get_value(gpio_read_ports[i]) : gpio_get_value_cansleep(gpio_read_ports[i]); ;
-		printk(KERN_DEBUG "%d - port %d - value %d",i,gpio_read_ports[i],gpio_read[i]);
+		gpio_read[i] = (gpio_can_sleep_table[i] == 1) ? gpio_get_value(gpio_read_ports[i]) : gpio_get_value_cansleep(gpio_read_ports[i]); 
+		printk(KERN_DEBUG "%d - port %d - value %d - gpio_funct %s",i,gpio_read_ports[i],gpio_read[i],(gpio_can_sleep_table[i] == 0) ? "normal" : "sleep" );
 		}
     if (!copy_to_user(buffer,gpio_read,gpio_read_num_set)) return j;
 	return 0;
@@ -92,10 +94,27 @@ static ssize_t gpr_device_read(struct file *filp,	/* see include/linux/fs.h   */
 
 static ssize_t gpr_device_write(struct file *filp, const char *buff, size_t len, loff_t * offset)
 {
-    char *tmp[MAX_GPIO];
-    if ((int)offset > gpio_read_num_set)
+    int i;
+    if (len > MAX_GPIO) 
+	{
+	printk(KERN_DEBUG "fastgpio: length - %d is greather than %d",len,MAX_GPIO);
 	return 0;
-    return copy_from_user(tmp,buff,(int)len);
+	}
+   if (len > gpio_read_num_set)
+	{
+	printk(KERN_DEBUG "fastgpio: length - %d is greather than actualy set pins %d",len,gpio_read_num_set);
+	return 0;
+	}
+   printk(KERN_DEBUG "fastgpio: write length - %d",len);
+   i = copy_from_user(&gpio_write,buff,(int)len);
+   for(i=0; i < len; i++)
+	{
+//	gpio_set_value(gpio_write_ports[i],gpio_write[i]);
+	gpio_can_sleep_table[i] == 1) ? gpio_set_value(gpio_write_ports[i],gpio_write[i]) : gpio_set_value_cansleep(gpio_write_ports[i],gpio_write[i]);
+	printk(KERN_DEBUG "%d - set port %d - value %d",i,gpio_write_ports[i],(unsigned char)gpio_write[i]);
+	}
+   return len;
+//    return copy_from_user(tmp,buff,(int)len);
 }
 
 
@@ -109,8 +128,7 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 			if (copy_from_user(&tmp, (gpio_ioctl *)arg,sizeof(gpio_ioctl)))
 				return -EACCES;
 			printk(KERN_DEBUG "fastgpio: checking that pins are usable");
-			// check if the pins are present and useble on board etc...
-
+			// check if the pins are present and useble on board, is direction out, or set direction to out
 			gpio_write_num_set = tmp.number;
 			for (i=0;i < tmp.number; i++)
 				{

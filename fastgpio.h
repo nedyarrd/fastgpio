@@ -26,7 +26,7 @@ static struct class *cl;
 
 unsigned char gpio_read[MAX_GPIO];
 unsigned char gpio_write[MAX_GPIO];
-unsigned int  gpio_can_sleep_table[MAX_GPIO];
+unsigned char  gpio_can_sleep_table[MAX_GPIO];
 int gpio_read_ports[MAX_GPIO]; // -1 means not set 0-x x+1 = -1 
 int gpio_write_ports[MAX_GPIO];
 int gpio_read_num_set;
