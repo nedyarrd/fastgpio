@@ -22,6 +22,11 @@ int main(void)
 	gpio_sw.pins[0] = 4;
 	gpio_sw.pins[1] = 3;
 	gpio_sw.pins[2] = 5;
+	gpio_sw.dir[0] = 1;
+	gpio_sw.dir[1] = 1;
+	gpio_sw.dir[2] = 0;
+
+	printf("dev/fastgpio open\n");
 	fd = open(file_name, O_RDWR);
 	if (fd == -1)
 		{
@@ -34,13 +39,18 @@ int main(void)
 		perror("ioctl SET_PINS failed\n");
 		return 2;
 		}
-	printf("dev/fastgpio opened\n");
+	printf("dev/fastgpio ioctl READ_PINS\n");
 	if (ioctl(fd,FASTGPIO_READ_PINS,&gpio_sw))
 		{
 		perror("ioctl READ_PINS failed\n");
 		return 3;
 		}
-	printf("dev/fastgpio ioctl READ_PINS\n");
+	if (ioctl(fd,FASTGPIO_SET_DIR,&gpio_sw))
+		{
+		perror("ioctl SET_DIR failed\n");
+		return 3;
+		}
+
 	printf("testing file reading:\n");
 	i = read(fd,tmp,MAX_NUM-1);
 	    printf("read only %d of set pins  - readen %d\n",MAX_NUM+10,i);
