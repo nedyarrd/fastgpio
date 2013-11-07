@@ -5,7 +5,7 @@
 #include <linux/cdev.h>
 #include <linux/fs.h>
 #include <linux/gpio.h>
-#include <asm/uaccess.h>/* for put_user */
+#include <asm/uaccess.h>
 #include "fastgpio.h"
 
 MODULE_LICENSE("GPL");
@@ -13,7 +13,6 @@ MODULE_LICENSE("GPL");
 
 int init_module(void)
 {
-//    Major_read = register_chrdev(0, DEVICE_NAME_READ, &fops_read);
   if (alloc_chrdev_region(&Major_read, 0, 1, "fastgpio") < 0)
 	  {
 	    return -1;
