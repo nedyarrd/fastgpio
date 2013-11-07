@@ -47,8 +47,6 @@ void cleanup_module(void)
   device_destroy(cl, Major_read);
   class_destroy(cl);
   unregister_chrdev_region(Major_read, 1);
-
-
 }
 
 
@@ -109,12 +107,10 @@ static ssize_t gpr_device_write(struct file *filp, const char *buff, size_t len,
    i = copy_from_user(&gpio_write,buff,(int)len);
    for(i=0; i < len; i++)
 	{
-//	gpio_set_value(gpio_write_ports[i],gpio_write[i]);
 	gpio_can_sleep_table[i] == 1) ? gpio_set_value(gpio_write_ports[i],gpio_write[i]) : gpio_set_value_cansleep(gpio_write_ports[i],gpio_write[i]);
 	printk(KERN_DEBUG "%d - set port %d - value %d",i,gpio_write_ports[i],(unsigned char)gpio_write[i]);
 	}
    return len;
-//    return copy_from_user(tmp,buff,(int)len);
 }
 
 
@@ -136,7 +132,6 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 				printk(KERN_DEBUG "fastgpio: write %d", tmp.pins[i]);
 				}
 			printk(KERN_DEBUG "fastgpio: setting %d pins to read",tmp.number);
-			return 0;
 			break;
 		case FASTGPIO_READ_PINS:
 			if (copy_from_user(&tmp, (gpio_ioctl *)arg,sizeof(gpio_ioctl)))
@@ -151,7 +146,16 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 				printk(KERN_DEBUG "fastgpio: read %d", tmp.pins[i]);
 				}
 			printk(KERN_DEBUG "fastgpio: setting %d pins to write",tmp.number);
-			return 0;
+			break;
+		case FAST_GPIO_DIR:
+			if (copy_from_user(&tmp, (gpio_ioctl *)arg,sizeof(gpio_ioctl)))
+				return -EACCES;
+			printk(KERN_DEBUG "fastgpio: setting pins direction");
+			for (i=0; i < tmp.number; i++)
+				{
+				(tmp.dir[i] == 1) ? gpio_direction_input(tmp.pins[i]) : gpio_direction_output(tmp.pins[i],0);
+				printk(KERN_DEBUG "fastgpio: set direction of pin %d to %s",tmp.pins[i],(tmp.dir[i] == 1) ? "input" : "output")
+				}
 			break;
 		}
 	return 0;
