@@ -9,7 +9,8 @@
 #include "fastgpio.h"
 
 MODULE_LICENSE("GPL");
-
+MODULE_AUTHOR("Przemyslaw Borkowski");
+MODULE_DESCRIPTION("My way to handle gpios from userspace via devfs, is much faster because we have one write fd for read and write");
 
 int init_module(void)
 {
