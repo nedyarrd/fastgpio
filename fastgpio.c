@@ -126,7 +126,8 @@ int gpr_request_gpio(unsigned pin,unsigned long type)
 	// we have 2 gpio types in and out, check present tables for that we requested them already, or request them
 	int i;
 	int j = 0;
-	if (gpio_is_valid(pin)) return -EACCES;
+	if (gpio_is_valid(pin) != 1) return -EACCES;
+	printk(KERN_DEBUG "checking is already requested");
 	for (i = 0; i < gpio_write_num_set; i++)
 		if (gpio_write_ports[i] == pin) j = 1;
 	for (i = 0; i < gpio_read_num_set; i++)
@@ -139,7 +140,7 @@ int gpr_request_gpio(unsigned pin,unsigned long type)
 static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	{
 	gpio_ioctl tmp;
-	int i;
+	int i,j,k,pin;
 
 	if (copy_from_user(&tmp, (gpio_ioctl *)arg,sizeof(gpio_ioctl)))
 		return -EACCES;
@@ -153,6 +154,29 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 				if (gpr_request_gpio(tmp.pins[i],GPIOF_OUT_INIT_LOW))
 					return -EACCES;
 // release unused gpios
+			for (i=0; i < gpio_write_num_set; i++)
+				{
+				k = 0;
+				j = 0;
+				pin = gpio_write[i];
+				while ((j < tmp.number) && (k == 0))
+					{
+					if (tmp.pins[i] == pin) k = 1;
+					j++;
+					}
+				while ((j < gpio_read_num_set) && (k == 0))
+					{
+					if (gpio_read_ports[i] == pin) k = 1;
+					j++;
+					}
+				if (!k) 
+					{
+#ifdef DEBUG
+					printk(KERN_DEBUG "fastgpio: releasing gpio number %d",pin);
+#endif
+					gpio_free(pin);
+					}
+				}
 			
 			gpio_write_num_set = tmp.number;
 			for (i=0;i < tmp.number; i++)
