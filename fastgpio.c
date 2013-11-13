@@ -166,8 +166,9 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 			for (i=0;i < tmp.number; i++)
 				if (gpr_request_gpio(tmp.pins[i],GPIOF_OUT_INIT_LOW))
 					return -EACCES;
-			release_unused_gpios(&tmp,GPIOF_OUT_INIT_LOW);
 // release unused gpios
+			release_unused_gpios(&tmp,GPIOF_OUT_INIT_LOW);
+/*
 			for (i=0; i < gpio_write_num_set; i++)
 				{
 				k = 0;
@@ -191,7 +192,7 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 					gpio_free(pin);
 					}
 				}
-			
+*/			
 			gpio_write_num_set = tmp.number;
 			for (i=0;i < tmp.number; i++)
 				{
