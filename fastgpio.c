@@ -37,12 +37,17 @@ int init_module(void)
 	    unregister_chrdev_region(Major_read, 1);
 	    return -1;
 	  }
-	memset(&gpio_can_sleep_table,0,MAX_GPIO);
+	memset(&gpio_can_sleep_table,0,ARCH_NR_GPIOS);
+	memset(&requested_gpios,0,ARCH_NR_GPIOS * sizeof(gpio_requested));
     return 0;
 }
 
 void cleanup_module(void)
 {
+  int i;
+  // release gpios before unloading module
+  for (i=0; i< ARCH_NR_GPIOS; i++)
+  	if (requested_gpios[i].read || requested_gpio[i].write) gpio_free(i);
   cdev_del(&c_dev);
   device_destroy(cl, Major_read);
   class_destroy(cl);
@@ -124,19 +129,27 @@ static ssize_t gpr_device_write(struct file *filp, const char *buff, size_t len,
 int gpr_request_gpio(unsigned pin,unsigned long type)
 	{
 	// we have 2 gpio types in and out, check present tables for that we requested them already, or request them
-	int i;
-	int j = 0;
+	int i = 0;
 	if (gpio_is_valid(pin) != 1) return -EACCES;
+#ifdef DEBUG
 	printk(KERN_DEBUG "checking is already requested");
-	for (i = 0; i < gpio_write_num_set; i++)
-		if (gpio_write_ports[i] == pin) j = 1;
-	for (i = 0; i < gpio_read_num_set; i++)
-		if (gpio_read_ports[i] == pin) j = 1;
-	if (!j)
+#endif
+	if (!(requested_gpios[i].read || requested_gpios[i].write))
 		i = gpio_request_one(pin,type,"");
-	if (i) return -EACCES; else return 0;
+	if (i) return -EACCES;
+		
+	if (type == GPIOF_OUT_INIT_LOW)
+		requested_gpios[i].write = 1;
+	if (type == GPIOF_IN)
+		requested_gpios[i].read = 1;
 	}
 
+void release_unused_gpios(gpio_ioctl &gpios, unsigned long type)
+	{
+	int i = 0;
+	// go through table, find what was released, and release it with gpio_free
+	}
+	
 static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	{
 	gpio_ioctl tmp;
@@ -153,6 +166,7 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 			for (i=0;i < tmp.number; i++)
 				if (gpr_request_gpio(tmp.pins[i],GPIOF_OUT_INIT_LOW))
 					return -EACCES;
+			release_unused_gpios(&tmp,GPIOF_OUT_INIT_LOW);
 // release unused gpios
 			for (i=0; i < gpio_write_num_set; i++)
 				{
