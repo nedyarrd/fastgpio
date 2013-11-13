@@ -15,20 +15,22 @@ static ssize_t gpr_device_write(struct file *, const char *, size_t, loff_t *);
 static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
 
 #define SUCCESS 0
-#define DEVICE_NAME_READ	"gpioread"/* Dev name as it appears in /proc/devices   */
-#define DEVICE_NAME_WRITE	"gpiowrite"/* Dev name as it appears in /proc/devices   */
-#define BUF_LEN		MAX_GPIO /* Max length of the message from the device */
-#define BUF_LEN_SET	MAX_GPIO*4 // I assume that gpio number is 3 digits + space or colon or something
 
 
 static struct class *cl;
 
+typedef struct {
+        unsigned char read;
+        unsigned char write;
+      } gpio_requested;
 
-unsigned char gpio_read[MAX_GPIO];
-unsigned char gpio_write[MAX_GPIO];
-unsigned char  gpio_can_sleep_table[MAX_GPIO];
-int gpio_read_ports[MAX_GPIO]; // -1 means not set 0-x x+1 = -1 
-int gpio_write_ports[MAX_GPIO];
+
+static gpio_requested requested_gpios[ARCH_NR_GPIOS];
+unsigned char gpio_read[ARCH_NR_GPIOS];
+unsigned char gpio_write[ARCH_NR_GPIOS];
+unsigned char  gpio_can_sleep_table[ARCH_NR_GPIOS];
+int gpio_read_ports[ARCH_NR_GPIOS]; // -1 means not set 0-x x+1 = -1 
+int gpio_write_ports[ARCH_NR_GPIOS];
 int gpio_read_num_set;
 int gpio_write_num_set;
 
