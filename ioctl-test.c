@@ -40,11 +40,28 @@ int main(int argc,char *argv[])
 		return 1;
 		}
 	printf("dev/fastgpio ioctl SET_PINS\n");
+	gpio_sw.number = 3;
 	if (ioctl(fd,FASTGPIO_SET_PINS,&gpio_sw))
 		{
 		perror("ioctl SET_PINS failed\n");
 		return 2;
 		}
+
+	printf("dev/fastgpio ioctl SET_PINS - check release unused\n");
+
+	gpio_sw.number = 2;
+	if (ioctl(fd,FASTGPIO_SET_PINS,&gpio_sw))
+		{
+		perror("ioctl SET_PINS failed\n");
+		return 2;
+		}
+	gpio_sw.number = 3;
+	if (ioctl(fd,FASTGPIO_SET_PINS,&gpio_sw))
+		{
+		perror("ioctl SET_PINS failed\n");
+		return 2;
+		}
+
 	printf("dev/fastgpio ioctl READ_PINS\n");
 	if (ioctl(fd,FASTGPIO_READ_PINS,&gpio_sw))
 		{

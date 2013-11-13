@@ -1,4 +1,4 @@
-KCFLAGS="-O3 -pipe -fomit-frame-pointer -mtune=native -mcpu=native -mfpu=neon-vfpv4 -g" 
+KCFLAGS="-O3 -pipe -fomit-frame-pointer -mtune=native -mcpu=native -mfpu=neon-vfpv4 -g -DDEBUG" 
 
 obj-m += fastgpio.o
 
@@ -14,7 +14,6 @@ clean:
 	rm ioctl-test?
 
 test:
-	./profile.sh
 	gcc -pg -g -D FAST_LANE ioctl-test.c -o ioctl-test1
 	gcc -pg -g -D NORMAL_LANE ioctl-test.c -o ioctl-test2
 	opcontrol --deinit
@@ -24,6 +23,7 @@ test:
 	opcontrol --reset
 	opcontrol --start
 	./ioctl-test1 
+	./profile.sh
 	./ioctl-test2
 	opcontrol --stop
 	opreport -l ./ioctl-test1
