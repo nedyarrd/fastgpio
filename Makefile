@@ -40,3 +40,10 @@ test2:
 	./ioctl-test2
 	dmesg | tail -n 5
 	
+test3:
+	gcc -pg -g -D FAST_LANE ioctl-test.c -o ioctl-test1
+	rmmod fastgpio
+	modprobe clean-gpio 
+	rmmod clean-gpio
+	insmod fastgpio.ko
+	./ioctl-test1

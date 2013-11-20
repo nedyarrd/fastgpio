@@ -9,7 +9,7 @@
 #include "fastgpio.h"
 
 #define DEBUG 1
-#define MAX_GPIO 10
+//#define MAX_GPIO 10
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Przemyslaw Borkowski");
@@ -52,7 +52,7 @@ void cleanup_module(void)
   // release gpios before unloading module
   for (i=0; i< MAX_GPIO; i++)
 	{
-	printk(KERN_DEBUG "fastgpio: cleanup i = %d, read = %d, write = %d",i,requested_gpios[i].read,requested_gpios[i].write);
+	printk(KERN_DEBUG "fastgpio: cleanup i = %d, read = %d, write = %d",i,(requested_gpios[i].read == 1) ? 1 : 0,(requested_gpios[i].write == 1) ? 1 : 0);
 	
   	if ((requested_gpios[i].read == 1) || (requested_gpios[i].write == 1)) 
 		{
@@ -146,30 +146,23 @@ int gpr_request_gpio(unsigned pin,unsigned long type)
 	int i = 0;
 	if (gpio_is_valid(pin) != 1) return -EACCES;
 #ifdef DEBUG2
-	printk(KERN_DEBUG "checking is already requested");
+	printk(KERN_DEBUG "checking %d is already requested read: %d write: %d",pin,(requested_gpios[pin].read == 1) ? 1 : 0,(requested_gpios[pin].write == 1) ? 1 : 0);
 #endif
-	if (!(requested_gpios[pin].read || requested_gpios[pin].write))
+	if (!((requested_gpios[pin].read == 1) || (requested_gpios[pin].write == 1)))
 		i = gpio_request_one(pin,type,"");
-#ifdef DEBUG
+#ifdef DEBUG2
 	printk(KERN_DEBUG "request gpio %d return value %d",pin,i);
 #endif
-
-	if (i) return -EACCES;
-		
-	if (type == GPIOF_OUT_INIT_LOW)
-		requested_gpios[pin].write = 1;
-	if (type == GPIOF_IN)
-		requested_gpios[pin].read = 1;
-	return 0;
+	if (i) return -EACCES; else return 0;
 	}
 
-	
+//#define REL_UNUSED(tbl) for (i=0; i < MAX_GPIO; i++) { if (requested_gpios[i].read || requested_gpios[i].write)
+
 static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	{
 	gpio_ioctl tmp;
-	gpio_requested rq_tmp[MAX_GPIO];
-//	int i,j,k,pin;
 	int i;
+	unsigned char rq_tmp[MAX_GPIO];
 
 	if (copy_from_user(&tmp, (gpio_ioctl *)arg,sizeof(gpio_ioctl)))
 		return -EACCES;
@@ -179,29 +172,23 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 		case FASTGPIO_SET_PINS:
 			printk(KERN_DEBUG "fastgpio: checking that pins are useable");
 			// check if the pins are present and useble on board, is direction out, or set direction to out
-// create copy of actual requested gpios;
-			memcpy(&rq_tmp,&requested_gpios,sizeof(rq_tmp));
-			i = 0;
+			// clear rq_tmp to see what was set
+			memset(&rq_tmp,0,MAX_GPIO*sizeof(unsigned char));
 			for (i=0;i < tmp.number; i++)
 				if (gpr_request_gpio(tmp.pins[i],GPIOF_OUT_INIT_LOW))
 					return -EACCES;
-			i = 0;
-//			find a way to release gpios that would be not requested for write or read
-// 			maybe create new table of requested gpios... and compare with new... but we have to zero whole table now
-/*			while (i < MAX_GPIO)
+					else 
+					rq_tmp[tmp.pins[i]] = 1;
+			for (i=0; i < MAX_GPIO; i++)
 				{
-				if (rq_tmp[i].read || rq_tmp[i].write)
-					{
-					printk(KERN_DEBUG "was requested %d",i);
-					if (!requested_gpios[i].read && !requested_gpios[i].write)
+				if (requested_gpios[i].read || requested_gpios[i].write)
+					if (!(requested_gpios[i].read || rq_tmp[i]))
 						{
-						printk(KERN_DEBUG "Releasing unused %d gpio",i);
 						gpio_free(i);
+						printk("fastgpio: releasing unused gpio %d in set pins",i);
 						}
-					}
-				i++;
-				} */
-// release unused gpios
+				requested_gpios[i].write = rq_tmp[i];
+				}
 			gpio_write_num_set = tmp.number;
 			for (i=0;i < tmp.number; i++)
 				{
@@ -213,25 +200,22 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 		case FASTGPIO_READ_PINS:
 			printk(KERN_DEBUG "fastgpio: checking that pins are usable");
 			// check if the pins are present and useble on board etc...
-			memcpy(&rq_tmp,&requested_gpios,sizeof(rq_tmp));
+			memset(&rq_tmp,MAX_GPIO, sizeof(unsigned char));
 			for (i=0;i < tmp.number; i++)
 				if (gpr_request_gpio(tmp.pins[i],GPIOF_IN))
 					return -EACCES;
-			i = 0;
-			while (i < MAX_GPIO)
+					else 
+					rq_tmp[i] = 1;
+			for (i=0; i < MAX_GPIO; i++)
 				{
-				if (rq_tmp[i].read || rq_tmp[i].write)
-					{
-					printk(KERN_DEBUG "was requested %d",i);
-					if ((requested_gpios[i].read == 0) && (requested_gpios[i].write == 0))
+				if (requested_gpios[i].read && requested_gpios[i].write)
+					if (!(requested_gpios[i].read && rq_tmp[i]))
 						{
-						printk(KERN_DEBUG "Releasing unused %d gpio",i);
 						gpio_free(i);
+						printk("fastgpio: releasing unused gpio in read pins");
 						}
-					}
-				i++;
-				} 
-
+				requested_gpios[i].read = rq_tmp[i];
+				}
 
 			gpio_read_num_set = tmp.number;
 			for (i=0;i < tmp.number; i++)

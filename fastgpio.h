@@ -20,8 +20,8 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 static struct class *cl;
 
 typedef struct {
-        unsigned char read;
-        unsigned char write;
+        unsigned int read;
+        unsigned int write;
       } gpio_requested;
 
 
