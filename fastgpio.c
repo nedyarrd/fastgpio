@@ -143,10 +143,10 @@ int gpr_request_gpio(unsigned pin,unsigned long type)
 	if (i) return -EACCES; else return 0;
 	}
 
-#define REL_UNUSED(tbl) for (i=0; i < MAX_GPIO; i++) { \
-		if ((requested_gpios[i].read || requested_gpios[i].write) && (tbl || rq_tmp[i])) \
+#define REL_UNUSED(tbl_change,tbl_stay) for (i=0; i < MAX_GPIO; i++) { \
+		if ((requested_gpios[i].read || requested_gpios[i].write) && (tbl_stay || rq_tmp[i])) \
 			gpio_free(i); \
-		requested_gpios[i].write = rq_tmp[i]; }
+		tbl_change = rq_tmp[i]; }
 
 static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	{
@@ -167,7 +167,7 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 					return -EACCES;
 					else 
 					rq_tmp[tmp.pins[i]] = 1;
-			REL_UNUSED(requested_gpios[i].read);
+			REL_UNUSED(requested_gpios[i].write,requested_gpios[i].read);
 			gpio_write_num_set = tmp.number;
 			for (i=0;i < tmp.number; i++)
 				gpio_write_ports[i] = tmp.pins[i];
@@ -179,7 +179,7 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 					return -EACCES;
 					else 
 					rq_tmp[i] = 1;
-			REL_UNUSED(requested_gpios[i].write);
+			REL_UNUSED(requested_gpios[i].read,requested_gpios[i].write);
 			gpio_read_num_set = tmp.number;
 			for (i=0;i < tmp.number; i++)
 				gpio_read_ports[i] = tmp.pins[i];
