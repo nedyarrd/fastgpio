@@ -125,38 +125,28 @@ static ssize_t gpr_device_write(struct file *filp, const char *buff, size_t len,
 	printk(KERN_DEBUG "fastgpio: length - %d is greather than actualy set pins %d",len,gpio_read_num_set);
 	return 0;
 	}
-#ifdef DEBUG2
-   printk(KERN_DEBUG "fastgpio: write length - %d",len);
-#endif
    i = copy_from_user(&gpio_write,buff,(int)len);
    for(i=0; i < len; i++)
-	{
 	(gpio_can_sleep_table[i] == 1) ? gpio_set_value(gpio_write_ports[i],gpio_write[i]) : gpio_set_value_cansleep(gpio_write_ports[i],gpio_write[i]);
-#ifdef DEBUG2
-	printk(KERN_DEBUG "%d - set port %d - value %d",i,gpio_write_ports[i],(unsigned char)gpio_write[i]);
-#endif
-	}
    return len;
 }
 
 
 int gpr_request_gpio(unsigned pin,unsigned long type)
 	{
+	// check if the pins are present and useble on board, is direction out, or set direction to out
 	// we have 2 gpio types in and out, check present tables for that we requested them already, or request them
 	int i = 0;
 	if (gpio_is_valid(pin) != 1) return -EACCES;
-#ifdef DEBUG2
-	printk(KERN_DEBUG "checking %d is already requested read: %d write: %d",pin,(requested_gpios[pin].read == 1) ? 1 : 0,(requested_gpios[pin].write == 1) ? 1 : 0);
-#endif
 	if (!((requested_gpios[pin].read == 1) || (requested_gpios[pin].write == 1)))
 		i = gpio_request_one(pin,type,"");
-#ifdef DEBUG2
-	printk(KERN_DEBUG "request gpio %d return value %d",pin,i);
-#endif
 	if (i) return -EACCES; else return 0;
 	}
 
-//#define REL_UNUSED(tbl) for (i=0; i < MAX_GPIO; i++) { if (requested_gpios[i].read || requested_gpios[i].write)
+#define REL_UNUSED(tbl) for (i=0; i < MAX_GPIO; i++) { \
+		if ((requested_gpios[i].read || requested_gpios[i].write) && (tbl || rq_tmp[i])) \
+			gpio_free(i); \
+		requested_gpios[i].write = rq_tmp[i]; }
 
 static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	{
@@ -170,8 +160,6 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 	switch (cmd)
 		{
 		case FASTGPIO_SET_PINS:
-			printk(KERN_DEBUG "fastgpio: checking that pins are useable");
-			// check if the pins are present and useble on board, is direction out, or set direction to out
 			// clear rq_tmp to see what was set
 			memset(&rq_tmp,0,MAX_GPIO*sizeof(unsigned char));
 			for (i=0;i < tmp.number; i++)
@@ -179,59 +167,27 @@ static long gpr_device_ioctl(struct file *filp, unsigned int cmd, unsigned long 
 					return -EACCES;
 					else 
 					rq_tmp[tmp.pins[i]] = 1;
-			for (i=0; i < MAX_GPIO; i++)
-				{
-				if (requested_gpios[i].read || requested_gpios[i].write)
-					if (!(requested_gpios[i].read || rq_tmp[i]))
-						{
-						gpio_free(i);
-						printk("fastgpio: releasing unused gpio %d in set pins",i);
-						}
-				requested_gpios[i].write = rq_tmp[i];
-				}
+			REL_UNUSED(requested_gpios[i].read);
 			gpio_write_num_set = tmp.number;
 			for (i=0;i < tmp.number; i++)
-				{
 				gpio_write_ports[i] = tmp.pins[i];
-				printk(KERN_DEBUG "fastgpio: write %d", tmp.pins[i]);
-				}
-			printk(KERN_DEBUG "fastgpio: setting %d pins to write",tmp.number);
 			break;
 		case FASTGPIO_READ_PINS:
-			printk(KERN_DEBUG "fastgpio: checking that pins are usable");
-			// check if the pins are present and useble on board etc...
 			memset(&rq_tmp,MAX_GPIO, sizeof(unsigned char));
 			for (i=0;i < tmp.number; i++)
 				if (gpr_request_gpio(tmp.pins[i],GPIOF_IN))
 					return -EACCES;
 					else 
 					rq_tmp[i] = 1;
-			for (i=0; i < MAX_GPIO; i++)
-				{
-				if (requested_gpios[i].read && requested_gpios[i].write)
-					if (!(requested_gpios[i].read && rq_tmp[i]))
-						{
-						gpio_free(i);
-						printk("fastgpio: releasing unused gpio in read pins");
-						}
-				requested_gpios[i].read = rq_tmp[i];
-				}
-
+			REL_UNUSED(requested_gpios[i].write);
 			gpio_read_num_set = tmp.number;
 			for (i=0;i < tmp.number; i++)
-				{
 				gpio_read_ports[i] = tmp.pins[i];
-				printk(KERN_DEBUG "fastgpio: read %d", tmp.pins[i]);
-				}
-			printk(KERN_DEBUG "fastgpio: setting %d pins to write",tmp.number);
 			break;
 		case FASTGPIO_SET_DIR:
-			printk(KERN_DEBUG "fastgpio: setting pins direction");
+			// request gpio if necessary
 			for (i=0; i < tmp.number; i++)
-				{
 				(tmp.dir[i] == 1) ? gpio_direction_input(tmp.pins[i]) : gpio_direction_output(tmp.pins[i],0);
-				printk(KERN_DEBUG "fastgpio: set direction of pin %d to %s",tmp.pins[i],(tmp.dir[i] == 1) ? "input" : "output");
-				}
 			break;
 		}
 	return 0;
